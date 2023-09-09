@@ -1,0 +1,10 @@
+database.host=localhost
+database.port=5432
+database.name=momentum
+database.username=postgres
+database.password=Admin@123
+kite.api_key=xxxxxxxxxxxxx
+kite.api_secret=xxxxxxxxxxxxx
+kite.request_token=xxxxxxxxxxxxx
+kite.access_token=xxxxxxxxxxxxx
+kite.public_token=xxxxxxxxxxxxx

@@ -1,0 +1,12 @@
+.idea/
+.idea/**
+.idea/hackathon-laughingbloopers.iml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/inspectionProfiles/Project_Default.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+app.properties
+temo.pdf
+config/__pycache__/__init__.cpython-39.pyc
+config/__pycache__/app_config.cpython-39.pyc

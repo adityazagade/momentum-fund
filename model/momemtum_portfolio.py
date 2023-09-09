@@ -1,0 +1,2 @@
+class MomentumStockPortfolio:
+    pass
