@@ -23,7 +23,7 @@ class PortfolioService:
         return list
 
     def init_rebalance(self):
-        trade_day = DayOfWeek.SATURDAY
+        trade_day = DayOfWeek.TUESDAY
 
         stock_universe = self.get_stock_universe()
 

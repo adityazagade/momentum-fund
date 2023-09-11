@@ -28,7 +28,7 @@ class VolatilityAdjustedReturnsRankingStrategy(RankingStrategy):
                  num_days: int = 60,
                  stock_universe: List[str] = None,
                  index: str = 'NIFTY 50',
-                 atr_period: int = 14):
+                 atr_period: int = 20):
         super().__init__()
         self.ranking_file_name = 'ranking.csv'
         self.results_dir = 'results'
@@ -36,10 +36,11 @@ class VolatilityAdjustedReturnsRankingStrategy(RankingStrategy):
         self.stock_universe = stock_universe
         self.index = index
         self.index_ema_span = 200
-        self.ticker_span = 50
+        self.ticker_ema_span = 100
         # Define the period for ATR calculation (e.g., 14 days)
         self.atr_period = atr_period
         self.risk_factor = 0.001  # 1 percent risk factor
+        self.max_gap_up_filter = 0.15
 
     def rank(self, stock_universe: list[str]) -> DataFrame:
         # get the last 1-year data for each stock in the stock universe
@@ -50,8 +51,8 @@ class VolatilityAdjustedReturnsRankingStrategy(RankingStrategy):
         end_date = date.today()
         one_year_back_date = date.today() - timedelta(365)
 
-        index_ohlc_df = self.ticker_data_service.get_data(self.index, one_year_back_date, end_date)
-
+        data = self.ticker_data_service.get_data(self.index, one_year_back_date, end_date)
+        index_ohlc_df = data.to_df()
         close_column_name_orig = 'close'
 
         final_df = index_ohlc_df.copy()
@@ -70,16 +71,16 @@ class VolatilityAdjustedReturnsRankingStrategy(RankingStrategy):
             trend_column_name = sym + '_trend'
             percent_chg_col_name = sym + '_percent_change'
 
-            data_df = self.ticker_data_service.get_data(stock, one_year_back_date, end_date)
+            ohlcv_data = self.ticker_data_service.get_data(stock, one_year_back_date, end_date)
+            data_df = ohlcv_data.to_df()
             # count the number of rows in the dataframe and if less than self.num_days, skip the stock
-            if len(data_df) < self.num_days:
+            if len(data_df) < self.ticker_ema_span:
+                print('Skipping ' + stock + ' as it has less than ' + str(self.ticker_ema_span) + ' rows')
                 continue
 
             stock_universe_filtered = stock_universe_filtered + [stock]
-            data_df[ema_column_name] = data_df['close'].ewm(span=self.ticker_span, adjust=False).mean()
+            data_df[ema_column_name] = data_df['close'].ewm(span=self.ticker_ema_span, adjust=False).mean()
             data_df[percent_chg_col_name] = (data_df['close'] - data_df['close'].shift(1)) / data_df['close'].shift(1)
-
-            # data_df['SMA30'] = data_df['close'].rolling(30).mean()  in case you want sma
 
             data_df[trend_column_name] = data_df.apply(
                 lambda row: 1 if row['close'] - row[ema_column_name] > 0 else (
@@ -93,7 +94,8 @@ class VolatilityAdjustedReturnsRankingStrategy(RankingStrategy):
             data_df.rename(columns={close_column_name_orig: close_column_name_new}, inplace=True)
             data_df.rename(columns={atr_column_name: atr_column_name_new}, inplace=True)
             final_df = pd.merge(final_df,
-                                data_df[['date', close_column_name_new, trend_column_name, percent_chg_col_name, atr_column_name_new]],
+                                data_df[['date', close_column_name_new, trend_column_name, percent_chg_col_name,
+                                         atr_column_name_new]],
                                 how='left',
                                 on=['date'])
 
@@ -143,7 +145,7 @@ class VolatilityAdjustedReturnsRankingStrategy(RankingStrategy):
             target_percent.append(position_size)
 
             remaining_cash = remaining_cash - account_value_allotted
-            if remaining_cash > 0 and trent_flag == 1 and max_gap_up_percent < 0.15:
+            if remaining_cash > 0 and trent_flag == 1 and max_gap_up_percent < self.max_gap_up_filter:
                 included.append(1)
             else:
                 included.append(0)
