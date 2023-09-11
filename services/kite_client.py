@@ -109,13 +109,6 @@ class KiteSDKClient(KiteClient):
         instruments_df = self.get_instruments()
         # save instruments_df
         # instruments_df.to_csv('instruments.csv', index=False)
-        nifty200_constituents_df = pd.read_csv('ind_nifty200list.csv')
-        tokens_df = pd.merge(nifty200_constituents_df, instruments_df[['instrument_token', 'tradingsymbol']],
-                             how='left',
-                             left_on=['Symbol'], right_on=['tradingsymbol'])
-        # tokens_df.instrument_token = tokens_df.instrument_token.astype('int')
-        # tokens_df = tokens_df[~tokens_df['instrument_token'].isna()].copy()
-        self.tokens_df = tokens_df
         self.instruments_df = instruments_df
 
     def get_data(self, symbol, start_date, end_date, interval="day") -> OhlcData:

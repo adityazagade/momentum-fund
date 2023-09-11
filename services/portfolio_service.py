@@ -1,4 +1,7 @@
 from datetime import date
+
+from clients.nse_client import NSEClient
+from config.app_config import AppConfig
 from model.market_regime_filter import LongTermMovingAverageMarketRegimeFilter
 from model.momentum_strategy import MomentumStrategy
 from model.portfolio_rebalancing import PortfolioRebalancingStrategyStrategyImpl
@@ -7,20 +10,12 @@ from model.position_sizing.position_sizing_strategies import VolatilityBasedPosi
 from model.ranking.ranking_strategies import VolatilityAdjustedReturnsRankingStrategy
 from model.scheduling.frequency import Frequency, DayOfWeek
 from model.scheduling.schedule import Schedule
-import pandas as pd
 
 
 class PortfolioService:
-    def get_current_portfolio(self):
-        pass
-
-    def get_stock_universe(self) -> []:
-        nifty200_constituents_df = pd.read_csv('ind_nifty200list.csv')
-        list = nifty200_constituents_df['Symbol'].tolist()
-        list.remove('PATANJALI')
-        # list.remove('JIOFIN')
-        # return list[:10]
-        return list
+    def __init__(self) -> None:
+        super().__init__()
+        self.nse_client = NSEClient()
 
     def init_rebalance(self):
         trade_day = DayOfWeek.TUESDAY
@@ -57,3 +52,15 @@ class PortfolioService:
             portfolio_rebalancing_strategy=portfolio_rebalancing_strategy
         )
         ms.execute(stock_universe)
+
+    def get_current_portfolio(self):
+        pass
+
+    def get_stock_universe(self) -> []:
+        # let's download stock universe from nse website
+        return self.nse_client.get_stock_universe('NIFTY 200')
+        # nifty200_constituents_df = pd.read_csv('ind_nifty200list.csv')
+        # list = nifty200_constituents_df['Symbol'].tolist()
+        # list.remove('PATANJALI')
+        # # return list[:10]
+        # return list
