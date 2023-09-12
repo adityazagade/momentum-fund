@@ -1,7 +1,7 @@
 from flask import jsonify, request
 
 from config.app_config import AppConfig
-from services.portfolio_service import PortfolioService
+from services.strategy_executor import StrategyExecutor
 
 
 def update_request_token(request_token):
@@ -22,8 +22,8 @@ def post_endpoint():
 
 
 def init_rebalance():
-    portfolio_service = PortfolioService()
-    portfolio_service.init_rebalance()
+    executor = StrategyExecutor()
+    executor.execute()
     return jsonify(success=True)
 
 

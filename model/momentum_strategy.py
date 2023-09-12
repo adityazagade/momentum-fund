@@ -1,11 +1,14 @@
+import logging
+
 from model.market_regime_filter import MarketRegimeFilter
+from model.portfolio.portfolio import Portfolio
 from model.portfolio_rebalancing import PortfolioRebalancingStrategy
 from model.position_rebalancing import PositionRebalancingStrategy
 from model.position_sizing.position_sizing_strategies import PositionSizingStrategy
 from model.ranking.ranking_strategies import RankingStrategy
 from model.scheduling.frequency import DayOfWeek
 from datetime import date
-from logging import Logger
+import logging
 
 
 class MomentumStrategy:
@@ -18,14 +21,15 @@ class MomentumStrategy:
                  portfolio_rebalancing_strategy: PortfolioRebalancingStrategy
                  ):
         self.position_sizing_strategy = position_sizing_strategy
-        self.logger = Logger(__name__)
+        self.logger = logging.getLogger(__name__)
         self.trade_day = trade_day
         self.market_regime_filter = market_regime_filter
         self.position_rebalancing_strategy = position_rebalancing_strategy
         self.portfolio_rebalancing_strategy = portfolio_rebalancing_strategy
         self.ranking_strategy = ranking_strategy
 
-    def execute(self, stock_universe: list[str]):
+    def execute(self, stock_universe: list[str], current_portfolio: Portfolio):
+        self.logger.info("Executing Momentum strategy")
 
         # 1. We only trade on a specific day of the week
         today = date.today()
@@ -44,6 +48,7 @@ class MomentumStrategy:
             self.logger.info("Market regime does not allow any buying. Skip execution")
             return
 
-        # 5. Construct initial portfolio
+        self.logger.info("Market regime allows buying. Proceeding with execution")
+
         # 6. Rebalance portfolio every wednesday
         # 7. Rebalance position every second wednesday

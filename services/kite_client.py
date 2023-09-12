@@ -1,17 +1,17 @@
 import time
-from abc import ABC, abstractmethod
-
 import pandas as pd
 import requests
+from abc import ABC, abstractmethod
 from kiteconnect import KiteConnect
 from pandas import DataFrame
-
 from config.app_config import AppConfig
 from model.Ohlcv import OhlcData
+import logging
 
 
 class KiteClient(ABC):
     def __init__(self) -> None:
+        self.logger = logging.getLogger(__name__)
         super().__init__()
 
     @abstractmethod
@@ -28,7 +28,9 @@ class HttpKiteClient(KiteClient):
         self.csrf_token = app_config.get('kite.ui.csrf_token')
         self.client_id = app_config.get('kite.ui.client_id')
         self.public_token = app_config.get('kite.ui.public_token')
-        # load instrments.csv into a dataframe
+        self.enctoken = app_config.get('kite.ui.enctoken')
+
+        # load instruments.csv into a dataframe
         self.instruments_df = pd.read_csv('instruments.csv')
 
     def get_data(self, symbol, start_date, end_date, interval="day") -> OhlcData:
@@ -48,6 +50,11 @@ class HttpKiteClient(KiteClient):
         headers = self.get_headers()
         payload = {}
         response = requests.request("GET", url, headers=headers, data=payload)
+        if response.status_code not in [200]:
+            self.logger.error("Error while fetching data from kite api. Status code: %s, response: %s",
+                              response.status_code, response.text)
+            raise Exception(
+                f'Error while fetching data from kite api. Status code: {response.status_code}, response: {response.text}')
         data = response.json()
         return OhlcData.from_json(data)
 
@@ -57,13 +64,12 @@ class HttpKiteClient(KiteClient):
         return instrument_token
 
     def get_headers(self):
-        cookie = str(f'user_id={self.client_id}; public_token={self.public_token}; kf_session={self.session}')
+        # cookie = str(f'user_id={self.client_id}; public_token={self.public_token}; kf_session={self.session}')
         headers = {
             'authority': 'kite.zerodha.com',
             'accept': 'application/json, text/plain, */*',
             'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
-            'authorization': 'enctoken ivOjK/rzFJMwWBlahBKbB8nDmUCAfGMIwsIKGAWzEfTrg6ACRoUekxwnoL5RyrA08XR30FcqSSuGgMopSHwVoimo3a5ac1JRaX+00va54+2CnAGOInGYvQ==',
-            # 'cookie': 'intercom-id-y72tx0ov=6aad72ce-4c70-42df-8301-5f99edc2052a; intercom-device-id-y72tx0ov=4db3b5c7-bbd6-4024-aed1-c1f03a35e78a; AMP_MKTG_d9d4ec74fa=JTdCJTIycmVmZXJyZXIlMjIlM0ElMjJodHRwcyUzQSUyRiUyRnN0b2Nrcy50aWNrZXJ0YXBlLmluJTJGJTIyJTJDJTIycmVmZXJyaW5nX2RvbWFpbiUyMiUzQSUyMnN0b2Nrcy50aWNrZXJ0YXBlLmluJTIyJTdE; AMP_d9d4ec74fa=JTdCJTIyZGV2aWNlSWQlMjIlM0ElMjJmMjg4MDY3ZS1jMTVlLTQ3NDgtOWEyOS0xNTY0ZTBhYjY1N2QlMjIlMkMlMjJzZXNzaW9uSWQlMjIlM0ExNjkxNDg3NzY0OTUzJTJDJTIyb3B0T3V0JTIyJTNBZmFsc2UlMkMlMjJsYXN0RXZlbnRUaW1lJTIyJTNBMTY5MTQ4Nzc3OTg1NiUyQyUyMmxhc3RFdmVudElkJTIyJTNBNSU3RA==; intercom-id-tp6yd2q1=d241d1b4-693b-450a-a2ef-7b749fddfcf8; intercom-device-id-tp6yd2q1=a390f9a3-efbf-4f93-a2cb-97ae1ed4f946; _cfuvid=7OKsm9lFAuL91oBmYPAnOVEhY_UwQj8Zh7Dw5UkKELQ-1694448435817-0-604800000; kf_session=yooSc9DmTNWN8TMoaJpTSKekos64E9h7; user_id=KW3437; public_token=KpUAgJMI7iOUUIFFQtxYLyP1bJOVXS09; enctoken=ivOjK/rzFJMwWBlahBKbB8nDmUCAfGMIwsIKGAWzEfTrg6ACRoUekxwnoL5RyrA08XR30FcqSSuGgMopSHwVoimo3a5ac1JRaX+00va54+2CnAGOInGYvQ==',
+            'authorization': f'enctoken {self.enctoken}',
             'dnt': '1',
             'referer': 'https://kite.zerodha.com/chart/web/tvc/NSE/DIXON/5552641',
             'sec-ch-ua': '"Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"',
@@ -73,6 +79,7 @@ class HttpKiteClient(KiteClient):
             'sec-fetch-mode': 'cors',
             'sec-fetch-site': 'same-origin',
             'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+            # 'cookie': 'intercom-id-y72tx0ov=6aad72ce-4c70-42df-8301-5f99edc2052a; intercom-device-id-y72tx0ov=4db3b5c7-bbd6-4024-aed1-c1f03a35e78a; AMP_MKTG_d9d4ec74fa=JTdCJTIycmVmZXJyZXIlMjIlM0ElMjJodHRwcyUzQSUyRiUyRnN0b2Nrcy50aWNrZXJ0YXBlLmluJTJGJTIyJTJDJTIycmVmZXJyaW5nX2RvbWFpbiUyMiUzQSUyMnN0b2Nrcy50aWNrZXJ0YXBlLmluJTIyJTdE; AMP_d9d4ec74fa=JTdCJTIyZGV2aWNlSWQlMjIlM0ElMjJmMjg4MDY3ZS1jMTVlLTQ3NDgtOWEyOS0xNTY0ZTBhYjY1N2QlMjIlMkMlMjJzZXNzaW9uSWQlMjIlM0ExNjkxNDg3NzY0OTUzJTJDJTIyb3B0T3V0JTIyJTNBZmFsc2UlMkMlMjJsYXN0RXZlbnRUaW1lJTIyJTNBMTY5MTQ4Nzc3OTg1NiUyQyUyMmxhc3RFdmVudElkJTIyJTNBNSU3RA==; intercom-id-tp6yd2q1=d241d1b4-693b-450a-a2ef-7b749fddfcf8; intercom-device-id-tp6yd2q1=a390f9a3-efbf-4f93-a2cb-97ae1ed4f946; _cfuvid=7OKsm9lFAuL91oBmYPAnOVEhY_UwQj8Zh7Dw5UkKELQ-1694448435817-0-604800000; kf_session=yooSc9DmTNWN8TMoaJpTSKekos64E9h7; user_id=KW3437; public_token=KpUAgJMI7iOUUIFFQtxYLyP1bJOVXS09; enctoken=ivOjK/rzFJMwWBlahBKbB8nDmUCAfGMIwsIKGAWzEfTrg6ACRoUekxwnoL5RyrA08XR30FcqSSuGgMopSHwVoimo3a5ac1JRaX+00va54+2CnAGOInGYvQ==',
             # 'x-kite-userid': self.client_id,
             # 'x-csrftoken': self.csrf_token,
             # 'cookie': cookie
@@ -108,10 +115,12 @@ class KiteSDKClient(KiteClient):
 
         instruments_df = self.get_instruments()
         # save instruments_df
-        # instruments_df.to_csv('instruments.csv', index=False)
+        instruments_df.to_csv('instruments.csv', index=False)
         self.instruments_df = instruments_df
 
     def get_data(self, symbol, start_date, end_date, interval="day") -> OhlcData:
+        # Sleep for 500 ms
+        time.sleep(0.5)
         print("Fetching data for symbol: " + symbol)
         df = self.instruments_df
         filtered_row = df[df['tradingsymbol'] == symbol]

@@ -18,3 +18,10 @@ class DayOfWeek(Enum):
     FRIDAY = 4
     SATURDAY = 5
     SUNDAY = 6
+
+    @staticmethod
+    def from_string(text: str, default):
+        for day in DayOfWeek:
+            if text == day.name:
+                return day
+        return default

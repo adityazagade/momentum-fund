@@ -22,6 +22,10 @@ class OhlcData:
     def __init__(self, data: List[Ohlcv]) -> None:
         self.data = data
 
+    @classmethod
+    def default_obj(cls):
+        return cls([])
+
     def to_df(self) -> DataFrame:
         df = DataFrame()
         df["date"] = [x.date_time.date() for x in self.data]
@@ -30,7 +34,8 @@ class OhlcData:
         df["low"] = [x.low for x in self.data]
         df["close"] = [x.close for x in self.data]
         df["volume"] = [x.volume for x in self.data]
-        df.sort_values(by="date", inplace=True, ascending=False)  # Sort by date desc
+        df.sort_values(by="date", inplace=True, ascending=True)  # Sort by date desc
+        df.reset_index(inplace=True, drop=True)  # Reset index
         return df
 
     @classmethod
