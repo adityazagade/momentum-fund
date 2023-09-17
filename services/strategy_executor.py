@@ -6,7 +6,7 @@ from model.market_regime_filter import LongTermMovingAverageMarketRegimeFilter
 from model.momentum_strategy import MomentumStrategy
 from model.portfolio_rebalancing import PortfolioRebalancingStrategyStrategyImpl
 from model.position_rebalancing import VolatilityBasedPositionRebalancingStrategy
-from model.position_sizing.position_sizing_strategies import VolatilityBasedPositionSizingStrategy
+from model.position_sizing.position_sizing_strategies import EqualRiskPositionSizingStrategy
 from model.ranking.ranking_strategies import VolatilityAdjustedReturnsRankingStrategy
 from model.scheduling.frequency import Frequency, DayOfWeek
 from model.scheduling.schedule import Schedule
@@ -37,12 +37,20 @@ class StrategyExecutor:
         trade_day = DayOfWeek.from_string(self.app_config.get(TRADE_DAY_KEY), default=DayOfWeek.WEDNESDAY)
         self.logger.info(f'Trade day: {trade_day}')
 
-        index = self.app_config.get(STOCK_UNIVERSE_INDEX_KEY)
-        stock_universe = self.index_service.get_index_constituents(index)
+        num_historical_lookup_days = int(self.app_config.get_or_default('num_historical_lookup_days', default=365))
 
-        ranking_strategy = VolatilityAdjustedReturnsRankingStrategy(num_days=90)
+        ranking_strategy = \
+            VolatilityAdjustedReturnsRankingStrategy(num_days=90,
+                                                     default_historical_lookup_days=num_historical_lookup_days,
+                                                     max_gap_percent=20,
+                                                     ticker_ema_span=100
+                                                     )
 
-        position_size_strategy = VolatilityBasedPositionSizingStrategy()
+        position_size_strategy = EqualRiskPositionSizingStrategy(
+            default_historical_lookup_days=num_historical_lookup_days,
+            atr_period=20,
+            risk_factor=0.001
+        )
 
         market_regime_filter = LongTermMovingAverageMarketRegimeFilter(index='NIFTY 50',
                                                                        index_ema_span=200,
@@ -73,4 +81,8 @@ class StrategyExecutor:
             position_rebalancing_strategy=position_rebalancing_strategy,
             portfolio_rebalancing_strategy=portfolio_rebalancing_strategy
         )
+
+        index = self.app_config.get(STOCK_UNIVERSE_INDEX_KEY)
+        stock_universe = self.index_service.get_index_constituents(index)
+
         ms.execute(stock_universe, current_portfolio)

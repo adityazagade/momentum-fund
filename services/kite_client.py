@@ -1,3 +1,4 @@
+import datetime
 import time
 import pandas as pd
 import requests
@@ -7,6 +8,8 @@ from pandas import DataFrame
 from config.app_config import AppConfig
 from model.Ohlcv import OhlcData
 import logging
+
+from services.cache_service import CacheService
 
 
 class KiteClient(ABC):
@@ -32,36 +35,34 @@ class HttpKiteClient(KiteClient):
 
         # load instruments.csv into a dataframe
         self.instruments_df = pd.read_csv('instruments.csv')
+        self.cache_service = CacheService.get_instance()
+        self.logger = logging.getLogger(__name__)
 
     def get_data(self, symbol, start_date, end_date, interval="day") -> OhlcData:
-        # sleep for 1 second to avoid rate limit
-        time.sleep(1)
-        url_template = "{base_url}/oms/instruments/historical/{instrument_token}/day?user_id={client_id}&oi={oi}&from={start_date}&to={end_date}"
-        start_date_str = start_date.strftime("%Y-%m-%d")
-        end_date_str = end_date.strftime("%Y-%m-%d")
-        instrument_token = self.get_instrument_token(symbol)
-        url = url_template.format(
-            base_url=self.base_url,
-            instrument_token=instrument_token,
-            client_id=self.client_id,
-            start_date=start_date_str,
-            end_date=end_date_str,
-            oi=0)
-        headers = self.get_headers()
-        payload = {}
-        response = requests.request("GET", url, headers=headers, data=payload)
-        if response.status_code not in [200]:
-            self.logger.error("Error while fetching data from kite api. Status code: %s, response: %s",
-                              response.status_code, response.text)
-            raise Exception(
-                f'Error while fetching data from kite api. Status code: {response.status_code}, response: {response.text}')
-        data = response.json()
-        return OhlcData.from_json(data)
+        self.logger.info(f'Fetching data from kite for {symbol} from {start_date} to {end_date}')
+        # check if the data is present in cache. If yes, return it, else fetch from api
+        if self.cache_service.is_data_present(symbol, start_date, end_date):
+            return self.cache_service.get_data(symbol, start_date, end_date)
+        else:
+            ohlc_data = self.fetch_data(symbol, start_date, end_date)
+            self.cache_service.save_data(symbol, start_date, end_date, ohlc_data)
+            return ohlc_data
 
     def get_instrument_token(self, ticker, exchange="NSE"):
-        tradingsymbol_ticker_filter = self.instruments_df['tradingsymbol'] == ticker
-        instrument_token = self.instruments_df.loc[tradingsymbol_ticker_filter]['instrument_token'].values[0]
-        return instrument_token
+        ticker_name_1 = ticker + '-EQ'
+        ticker_name_2 = ticker + '-BE'
+        ticker_name_3 = ticker + '-SM'
+        ticker_name_4 = ticker + '-RR'
+        ticker_name_5 = ticker + '-RE'
+        ticker_name_6 = ticker + '-RT'
+        # fetch instrument token using ticker name until you get a match. Use for loop
+        instrument_token = None
+        for ticker_name in [ticker, ticker_name_1, ticker_name_2, ticker_name_3, ticker_name_4, ticker_name_5,
+                            ticker_name_6]:
+            matching_rows = self.instruments_df.loc[self.instruments_df['tradingsymbol'] == ticker_name]
+            if len(matching_rows.index) > 0:
+                return matching_rows['instrument_token'].values[0]
+        raise Exception(f'Instrument token not found for {ticker}')
 
     def get_headers(self):
         # cookie = str(f'user_id={self.client_id}; public_token={self.public_token}; kf_session={self.session}')
@@ -85,6 +86,31 @@ class HttpKiteClient(KiteClient):
             # 'cookie': cookie
         }
         return headers
+
+    def fetch_data(self, symbol, start_date, end_date):
+        # sleep for 1 second to avoid rate limit
+        time.sleep(1)
+        url_template = "{base_url}/oms/instruments/historical/{instrument_token}/day?user_id={client_id}&oi={oi}&from={start_date}&to={end_date}"
+        start_date_str = start_date.strftime("%Y-%m-%d")
+        end_date_str = end_date.strftime("%Y-%m-%d")
+        instrument_token = self.get_instrument_token(symbol)
+        url = url_template.format(
+            base_url=self.base_url,
+            instrument_token=instrument_token,
+            client_id=self.client_id,
+            start_date=start_date_str,
+            end_date=end_date_str,
+            oi=0)
+        headers = self.get_headers()
+        payload = {}
+        response = requests.request("GET", url, headers=headers, data=payload)
+        if response.status_code not in [200]:
+            self.logger.error("Error while fetching data from kite api. Status code: %s, response: %s",
+                              response.status_code, response.text)
+            raise Exception(
+                f'Error while fetching data from kite api. Status code: {response.status_code}, response: {response.text}')
+        data = response.json()
+        return OhlcData.from_json(data)
 
 
 class KiteSDKClient(KiteClient):

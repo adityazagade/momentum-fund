@@ -16,6 +16,7 @@ class IndexDataService:
     def get_index_constituents(self, index: str):
         self.logger.info(f'Getting index constituents for index: {index}')
         stock_universe = self.nse_client.get_stock_universe(index)
-        stock_universe.remove('PATANJALI') # Some issue with this stock
-        # return list[:25]
+        stock_universe.remove('PATANJALI')  # Some issue with this stock
+        # return stock_universe[-20:]
         return stock_universe
+        # return ['JBMA']

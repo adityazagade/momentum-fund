@@ -18,3 +18,6 @@ class AppConfig:
         with open('app.properties', 'w') as f:
             for key, value in self.properties.items():
                 f.write(f'{key}={value}\n')
+
+    def get_or_default(self, key, default):
+        return self.properties.get(key, default)
