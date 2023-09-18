@@ -71,3 +71,16 @@ class OhlcData:
             ohlcv_obj = Ohlcv(open_price, high, low, close, volume, timestamp)
             ohlcvs.append(ohlcv_obj)
         return OhlcData(ohlcvs)
+
+    def get_last_price(self):
+        # data might not be sorted. Iterate through the data and get the last price
+        last_price = None
+        date = None
+        for ohlcv in self.data:
+            if date is None:
+                date = ohlcv.date_time.date()
+                last_price = ohlcv.close
+            elif ohlcv.date_time.date() > date:
+                last_price = ohlcv.close
+                date = ohlcv.date_time.date()
+        return last_price

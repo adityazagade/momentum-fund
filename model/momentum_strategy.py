@@ -3,8 +3,8 @@ from datetime import date
 
 from model.market_regime_filter import MarketRegimeFilter
 from model.portfolio.portfolio import Portfolio
-from model.portfolio_rebalancing import PortfolioRebalancingStrategy
-from model.position_rebalancing import PositionRebalancingStrategy
+from model.rebalancing.portfolio_rebalancing import PortfolioRebalancingStrategy
+from model.rebalancing.position_rebalancing import PositionRebalancingStrategy
 from model.position_sizing.position_sizing_strategies import PositionSizingStrategy
 from model.ranking.ranking_strategies import RankingStrategy
 from model.results import ResultBuilder, Result
@@ -38,22 +38,26 @@ class MomentumStrategy:
             return
 
         # 2. Rank all stocks in the universe based on momentum
-        ranking_results = self.ranking_strategy.rank(stock_universe)
+        ranking_table = self.ranking_strategy.rank(stock_universe)
 
         # 3. Calculate position sizes based on 10 basis points.
-        position_sizing_result = self.position_sizing_strategy.calculate_position_sizes(ranking_results)
+        position_sizing_result = self.position_sizing_strategy.calculate_position_sizes(ranking_table)
+
+        # 5. Rebalance portfolio
+        rebalancing_result = self.portfolio_rebalancing_strategy.rebalance_portfolio(
+            current_portfolio,
+            ranking_table,
+            position_sizing_result)
+
+        updated_portfolio = rebalancing_result.portfolio
+        updated_portfolio.save()
 
         result = ResultBuilder() \
-            .with_ranking_results(ranking_results) \
+            .with_ranking_results(ranking_table) \
             .with_position_sizing_result(position_sizing_result) \
             .build()
 
         self.print_and_save(result)
-
-        # 4. Check Index filter
-        if not self.market_regime_filter.is_allowed():
-            self.logger.info("Market regime does not allow any buying. Skip execution")
-            return
 
         self.logger.info("Market regime allows buying. Proceeding with execution")
 

@@ -1,7 +1,7 @@
 import logging
 import pandas as pd
 from model.position_sizing.position_sizing_result import PositionSizingResult
-from model.ranking.ranking_result import RankingResult
+from model.ranking.ranking_result import RankingTable
 
 
 class Result:
@@ -42,7 +42,7 @@ class ResultBuilder:
         self.position_sizing_result = None
         self.logger = logging.getLogger(__name__)
 
-    def with_ranking_results(self, ranking_result: RankingResult) -> 'ResultBuilder':
+    def with_ranking_results(self, ranking_result: RankingTable) -> 'ResultBuilder':
         self.ranking_result = ranking_result
         return self
 

@@ -4,8 +4,8 @@ from datetime import date
 from config.app_config import AppConfig
 from model.market_regime_filter import LongTermMovingAverageMarketRegimeFilter
 from model.momentum_strategy import MomentumStrategy
-from model.portfolio_rebalancing import PortfolioRebalancingStrategyStrategyImpl
-from model.position_rebalancing import VolatilityBasedPositionRebalancingStrategy
+from model.rebalancing.portfolio_rebalancing import PortfolioRebalancingStrategyStrategyImpl
+from model.rebalancing.position_rebalancing import VolatilityBasedPositionRebalancingStrategy
 from model.position_sizing.position_sizing_strategies import EqualRiskPositionSizingStrategy
 from model.ranking.ranking_strategies import VolatilityAdjustedReturnsRankingStrategy
 from model.scheduling.frequency import Frequency, DayOfWeek
@@ -32,29 +32,39 @@ class StrategyExecutor:
         self.logger.info('Executing strategy executor')
 
         current_portfolio = self.portfolio_service.get_portfolio()
-        self.logger.info(f'Current portfolio: {current_portfolio}')
+        self.logger.info(f'Current portfolio: \n{current_portfolio}')
 
         trade_day = DayOfWeek.from_string(self.app_config.get(TRADE_DAY_KEY), default=DayOfWeek.WEDNESDAY)
         self.logger.info(f'Trade day: {trade_day}')
 
         num_historical_lookup_days = int(self.app_config.get_or_default('num_historical_lookup_days', default=365))
 
-        ranking_strategy = \
-            VolatilityAdjustedReturnsRankingStrategy(num_days=90,
-                                                     default_historical_lookup_days=num_historical_lookup_days,
-                                                     max_gap_percent=20,
-                                                     ticker_ema_span=100
-                                                     )
+        ticker_ema_span = 100
+        risk_factor = 0.001
+        top_n_percent = 20
+        num_days = 90
+        max_gap_percent = 20
+        atr_period = 20
+        index_ema_span = 200
+        default_historical_lookup_days = 365
+
+        ranking_strategy = VolatilityAdjustedReturnsRankingStrategy(
+            num_days=num_days,
+            default_historical_lookup_days=num_historical_lookup_days,
+            max_gap_percent=max_gap_percent,
+            ticker_ema_span=ticker_ema_span
+        )
 
         position_size_strategy = EqualRiskPositionSizingStrategy(
             default_historical_lookup_days=num_historical_lookup_days,
-            atr_period=20,
-            risk_factor=0.001
+            atr_period=atr_period,
+            risk_factor=risk_factor
         )
 
-        market_regime_filter = LongTermMovingAverageMarketRegimeFilter(index='NIFTY 50',
-                                                                       index_ema_span=200,
-                                                                       default_historical_lookup_days=365)
+        market_regime_filter = LongTermMovingAverageMarketRegimeFilter(
+            index='NIFTY 50',
+            index_ema_span=index_ema_span,
+            default_historical_lookup_days=default_historical_lookup_days)
 
         position_rebalancing_strategy = VolatilityBasedPositionRebalancingStrategy(
             schedule=Schedule(
@@ -64,13 +74,18 @@ class StrategyExecutor:
                 day_of_week=trade_day,
             ))
 
+        schedule = Schedule(
+            start_date=date.today(),
+            end_date=date.today(),
+            frequency=Frequency.WEEKLY,
+            day_of_week=trade_day
+        )
+
         portfolio_rebalancing_strategy = PortfolioRebalancingStrategyStrategyImpl(
-            schedule=Schedule(
-                start_date=date.today(),
-                end_date=date.today(),
-                frequency=Frequency.WEEKLY,
-                day_of_week=trade_day,
-            )
+            risk_factor=risk_factor,
+            top_n_percent=top_n_percent,
+            ticker_ema_span=ticker_ema_span,
+            market_regime_filter=market_regime_filter,
         )
 
         ms = MomentumStrategy(

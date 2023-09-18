@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from datetime import date, timedelta
 
 from model.position_sizing.position_sizing_result import PositionSizingResult
-from model.ranking.ranking_result import RankingResult
+from model.ranking.ranking_result import RankingTable
 from services.ticker_historical_data import TickerDataService
 
 
@@ -38,7 +38,7 @@ class EqualRiskPositionSizingStrategy(PositionSizingStrategy):
         self.atr_period = atr_period
         self.risk_factor = risk_factor  # 1 percent risk factor
 
-    def calculate_position_sizes(self, ranking_result: RankingResult) -> PositionSizingResult:
+    def calculate_position_sizes(self, ranking_result: RankingTable) -> PositionSizingResult:
         self.logger.info("Calculating position sizes based on volatility")
         end_date = date.today()
         historical_data_lookup_start_date = date.today() - timedelta(self.default_historical_lookup_days)
@@ -50,20 +50,21 @@ class EqualRiskPositionSizingStrategy(PositionSizingStrategy):
 
         position_sizing_result = PositionSizingResult()
         for row in ranking_result.rows:
-            if remaining_cash > 0:
-                ohlcv_data = self.ticker_data_service.get_data(row.symbol, historical_data_lookup_start_date, end_date)
-                data_df = ohlcv_data.to_df()
-                self.calculate_atr(data_df, self.atr_period)
-                current_atr = data_df[self.atr_col].iloc[-1]
-                last_close = data_df[self.close_col].iloc[-1]
+            ohlcv_data = self.ticker_data_service.get_data(row.symbol, historical_data_lookup_start_date, end_date)
+            data_df = ohlcv_data.to_df()
+            self.calculate_atr(data_df, self.atr_period)
+            current_atr = data_df[self.atr_col].iloc[-1]
+            last_close = data_df[self.close_col].iloc[-1]
+
+            if remaining_cash > 0 and row.included == 1:
                 num_stocks_to_buy = math.floor(daily_risk / current_atr)
                 account_value_allotted = num_stocks_to_buy * last_close
                 weight = account_value_allotted / account_value
                 remaining_cash = remaining_cash - account_value_allotted
-                position_sizing_result.add_position(row.symbol, weight)
+                position_sizing_result.add_position(row.symbol, weight, current_atr, last_close)
             else:
                 weight = 0
-                position_sizing_result.add_position(row.symbol, weight)
+                position_sizing_result.add_position(row.symbol, weight, current_atr, last_close)
 
         return position_sizing_result
 

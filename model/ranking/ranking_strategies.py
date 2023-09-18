@@ -7,7 +7,7 @@ import pandas as pd
 from pandas import DataFrame
 from sklearn.metrics import r2_score
 
-from model.ranking.ranking_result import RankingResult
+from model.ranking.ranking_result import RankingTable
 from services.ticker_historical_data import TickerDataService
 
 
@@ -19,7 +19,7 @@ class RankingStrategy(ABC):
         self.logger = logging.getLogger(__name__)
 
     @abstractmethod
-    def rank(self, stock_universe: list[str]) -> RankingResult:
+    def rank(self, stock_universe: list[str]) -> RankingTable:
         pass
 
 
@@ -178,12 +178,15 @@ class VolatilityAdjustedReturnsRankingStrategy(RankingStrategy):
         sym_param_df['last_close'] = last_close
 
         sym_param_df.sort_values(by=['included', 'score'], ascending=False, inplace=True)
+
         # filter the ones with included = 1
-        filtered_df = sym_param_df[sym_param_df['included'] == 1]
-        filtered_df.reset_index(inplace=True, drop=True)
+        # filtered_df = sym_param_df[sym_param_df['included'] == 1]
+        sym_param_df.reset_index(
+            inplace=True,
+            drop=True)  # reset the index of filtered_df if earlier line is uncommented
 
         # self.save_ranking_results(sym_param_df)
-        return RankingResult.from_df(filtered_df)
+        return RankingTable.from_df(sym_param_df)
 
     def calculate_trend(self, data_df: DataFrame):
         data_df[self.ema_col] = data_df[self.close_col].ewm(span=self.ticker_ema_span, adjust=False).mean()
