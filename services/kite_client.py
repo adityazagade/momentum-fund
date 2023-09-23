@@ -1,14 +1,14 @@
-import datetime
+import logging
 import time
+from abc import ABC, abstractmethod
+
 import pandas as pd
 import requests
-from abc import ABC, abstractmethod
 from kiteconnect import KiteConnect
 from pandas import DataFrame
+
 from config.app_config import AppConfig
 from model.Ohlcv import OhlcData
-import logging
-
 from services.cache_service import CacheService
 
 
@@ -87,13 +87,13 @@ class HttpKiteClient(KiteClient):
         }
         return headers
 
-    def fetch_data(self, symbol, start_date, end_date):
+    def fetch_data(self, ticker, start_date, end_date):
         # sleep for 1 second to avoid rate limit
         time.sleep(1)
         url_template = "{base_url}/oms/instruments/historical/{instrument_token}/day?user_id={client_id}&oi={oi}&from={start_date}&to={end_date}"
         start_date_str = start_date.strftime("%Y-%m-%d")
         end_date_str = end_date.strftime("%Y-%m-%d")
-        instrument_token = self.get_instrument_token(symbol)
+        instrument_token = self.get_instrument_token(ticker)
         url = url_template.format(
             base_url=self.base_url,
             instrument_token=instrument_token,
@@ -109,8 +109,9 @@ class HttpKiteClient(KiteClient):
                               response.status_code, response.text)
             raise Exception(
                 f'Error while fetching data from kite api. Status code: {response.status_code}, response: {response.text}')
-        data = response.json()
-        return OhlcData.from_json(data)
+        json_data = response.json()
+        candles_data = json_data["data"]["candles"]  # Extract the "candles" array from the JSON data
+        return OhlcData.from_json(ticker, candles_data)
 
 
 class KiteSDKClient(KiteClient):
@@ -144,12 +145,12 @@ class KiteSDKClient(KiteClient):
         instruments_df.to_csv('instruments.csv', index=False)
         self.instruments_df = instruments_df
 
-    def get_data(self, symbol, start_date, end_date, interval="day") -> OhlcData:
+    def get_data(self, ticker, start_date, end_date, interval="day") -> OhlcData:
         # Sleep for 500 ms
         time.sleep(0.5)
-        print("Fetching data for symbol: " + symbol)
+        print("Fetching data for symbol: " + ticker)
         df = self.instruments_df
-        filtered_row = df[df['tradingsymbol'] == symbol]
+        filtered_row = df[df['tradingsymbol'] == ticker]
         instrument_token = int(filtered_row['instrument_token'].iloc[0])
         response = self.kite.historical_data(
             instrument_token=instrument_token,
@@ -157,7 +158,7 @@ class KiteSDKClient(KiteClient):
             to_date=end_date,
             interval=interval
         )
-        return OhlcData.from_kite_trade_api_response(response)
+        return OhlcData.from_kite_trade_api_response(ticker, response)
 
     def get_instrument_token(self, ticker, exchange="NSE"):
         response = self.kite.instruments(exchange=exchange)

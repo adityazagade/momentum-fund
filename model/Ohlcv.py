@@ -3,11 +3,13 @@ from datetime import datetime
 from pandas import DataFrame
 from typing import List
 
+import constants.column_names as column_names
+
 
 class Ohlcv:
-    def __init__(self, open, high, low, close, volume, date_time: datetime) -> None:
+    def __init__(self, open_price, high, low, close, volume, date_time: datetime) -> None:
         super().__init__()
-        self.open = open
+        self.open = open_price
         self.high = high
         self.low = low
         self.close = close
@@ -19,31 +21,31 @@ class Ohlcv:
 
 
 class OhlcData:
-    def __init__(self, data: List[Ohlcv]) -> None:
+    def __init__(self, ticker: str, data: List[Ohlcv]) -> None:
+        self.ticker = ticker
         self.data = data
 
     @classmethod
-    def default_obj(cls):
-        return cls([])
+    def default_obj(cls, ticker):
+        return cls(ticker, [])
 
     def to_df(self) -> DataFrame:
         df = DataFrame()
-        df["date"] = [x.date_time.date() for x in self.data]
-        df["open"] = [x.open for x in self.data]
-        df["high"] = [x.high for x in self.data]
-        df["low"] = [x.low for x in self.data]
-        df["close"] = [x.close for x in self.data]
-        df["volume"] = [x.volume for x in self.data]
-        df.sort_values(by="date", inplace=True, ascending=True)  # Sort by date desc
+        df[column_names.date] = [x.date_time.date() for x in self.data]
+        df[column_names.open] = [x.open for x in self.data]
+        df[column_names.high] = [x.high for x in self.data]
+        df[column_names.low] = [x.low for x in self.data]
+        df[column_names.close] = [x.close for x in self.data]
+        df[column_names.volume] = [x.volume for x in self.data]
+        df.sort_values(by=column_names.date, inplace=True, ascending=True)  # Sort by date desc
         df.reset_index(inplace=True, drop=True)  # Reset index
         return df
 
     @classmethod
-    def from_json(cls, response_json):
-        # Extract the "candles" array from the JSON data
-        candles_data = response_json["data"]["candles"]
+    def from_json(cls, ticker: str, candles_data):
         # List to store OHLCV objects
         ohlcvs = []
+
         # Iterate through the "candles" array and convert each row to OHLCV objects
         date_format = "%Y-%m-%dT%H:%M:%S%z"
         for candle in candles_data:
@@ -56,21 +58,21 @@ class OhlcData:
 
             ohlcv_obj = Ohlcv(open_price, high, low, close, volume, timestamp)
             ohlcvs.append(ohlcv_obj)
-        return OhlcData(ohlcvs)
+        return OhlcData(ticker, ohlcvs)
 
     @classmethod
-    def from_kite_trade_api_response(cls, response):
+    def from_kite_trade_api_response(cls, ticker: str, response: list[dict[str, datetime]]):
         ohlcvs = []
         for line in response:
-            open_price = line["open"]
-            high = line["high"]
-            low = line["low"]
-            close = line["close"]
-            volume = line["volume"]
-            timestamp = line["date"]
-            ohlcv_obj = Ohlcv(open_price, high, low, close, volume, timestamp)
+            open = line[column_names.open]
+            high = line[column_names.high]
+            low = line[column_names.low]
+            close = line[column_names.close]
+            volume = line[column_names.volume]
+            timestamp = line[column_names.date]
+            ohlcv_obj = Ohlcv(open, high, low, close, volume, timestamp)
             ohlcvs.append(ohlcv_obj)
-        return OhlcData(ohlcvs)
+        return OhlcData(ticker, ohlcvs)
 
     def get_last_price(self):
         # data might not be sorted. Iterate through the data and get the last price

@@ -1,10 +1,10 @@
 class PositionSizingResultRow:
-    def __init__(self, symbol: str, weight: float, atr: float, last_close: float) -> None:
+    def __init__(self, symbol: str, weight: float, atr: float, close: float) -> None:
         super().__init__()
         self.symbol = symbol
         self.weight = weight
         self.atr = atr
-        self.last_close = last_close
+        self.close = close
 
 
 class PositionSizingResult:
@@ -29,4 +29,4 @@ class PositionSizingResult:
     def get_last_close(self, symbol) -> float:
         for row in self.rows:
             if row.symbol == symbol:
-                return row.last_close
+                return row.close

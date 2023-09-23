@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-
 from model.scheduling.schedule import Schedule
 
 
@@ -15,6 +14,7 @@ class VolatilityBasedPositionRebalancingStrategy(PositionRebalancingStrategy):
     """ Rebalance based on volatility of the stock"""
 
     def __init__(self, schedule: Schedule):
+        super().__init__()
         self.schedule = schedule
 
     def rebalance_position(self, data):

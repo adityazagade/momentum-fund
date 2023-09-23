@@ -10,3 +10,10 @@ class RebalancingResult:
 
     def add_stock_to_buy(self, symbol, num_stocks_to_buy, weight):
         self.stocks_to_buy.append((symbol, num_stocks_to_buy, weight))
+
+    def to_dict(self):
+        return {
+            'portfolio': self.portfolio.to_dict(),
+            'stocks_to_sell': self.stocks_to_sell,
+            'stocks_to_buy': self.stocks_to_buy
+        }

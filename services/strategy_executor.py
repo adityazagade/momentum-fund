@@ -1,6 +1,7 @@
 import logging
-from datetime import date
+from constants import constants as constants
 
+from datetime import date
 from config.app_config import AppConfig
 from model.market_regime_filter import LongTermMovingAverageMarketRegimeFilter
 from model.momentum_strategy import MomentumStrategy
@@ -13,17 +14,11 @@ from model.scheduling.schedule import Schedule
 from services.index_service import IndexDataService
 from services.portfolio_service import PortfolioService
 
-TRADE_DAY_KEY = 'trade_day'
-
-PROPERTIES_FILE = 'app.properties'
-
-STOCK_UNIVERSE_INDEX_KEY = 'stock_universe_index'
-
 
 class StrategyExecutor:
     def __init__(self) -> None:
         super().__init__()
-        self.app_config = AppConfig(PROPERTIES_FILE)
+        self.app_config = AppConfig(constants.PROPERTIES_FILE)
         self.logger = logging.getLogger(__name__)
         self.portfolio_service = PortfolioService()
         self.index_service = IndexDataService()
@@ -34,7 +29,7 @@ class StrategyExecutor:
         current_portfolio = self.portfolio_service.get_portfolio()
         self.logger.info(f'Current portfolio: \n{current_portfolio}')
 
-        trade_day = DayOfWeek.from_string(self.app_config.get(TRADE_DAY_KEY), default=DayOfWeek.WEDNESDAY)
+        trade_day = DayOfWeek.from_string(self.app_config.get(constants.TRADE_DAY_KEY), default=DayOfWeek.WEDNESDAY)
         self.logger.info(f'Trade day: {trade_day}')
 
         num_historical_lookup_days = int(self.app_config.get_or_default('num_historical_lookup_days', default=365))
@@ -74,30 +69,23 @@ class StrategyExecutor:
                 day_of_week=trade_day,
             ))
 
-        schedule = Schedule(
-            start_date=date.today(),
-            end_date=date.today(),
-            frequency=Frequency.WEEKLY,
-            day_of_week=trade_day
-        )
-
         portfolio_rebalancing_strategy = PortfolioRebalancingStrategyStrategyImpl(
             risk_factor=risk_factor,
             top_n_percent=top_n_percent,
             ticker_ema_span=ticker_ema_span,
             market_regime_filter=market_regime_filter,
+            position_sizing_strategy=position_size_strategy
         )
 
         ms = MomentumStrategy(
             trade_day=trade_day,
             ranking_strategy=ranking_strategy,
-            position_sizing_strategy=position_size_strategy,
             market_regime_filter=market_regime_filter,
             position_rebalancing_strategy=position_rebalancing_strategy,
             portfolio_rebalancing_strategy=portfolio_rebalancing_strategy
         )
 
-        index = self.app_config.get(STOCK_UNIVERSE_INDEX_KEY)
+        index = self.app_config.get(constants.STOCK_UNIVERSE_INDEX_KEY)
         stock_universe = self.index_service.get_index_constituents(index)
 
-        ms.execute(stock_universe, current_portfolio)
+        return ms.execute(stock_universe, current_portfolio)

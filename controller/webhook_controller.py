@@ -21,13 +21,13 @@ def post_endpoint():
     return jsonify(success=True)
 
 
-def init_rebalance():
+def init():
     executor = StrategyExecutor()
-    executor.execute()
-    return jsonify(success=True)
+    result = executor.execute()
+    return jsonify(success=True, message='Strategy executed successfully', data=result.to_dict())
 
 
 def create_webhook_routes(app):
     app.route('/api/test', methods=['GET'])(get_endpoint)
-    app.route('/api/init', methods=['GET'])(init_rebalance)
+    app.route('/api/init', methods=['GET'])(init)
     app.route('/api/webhook', methods=['POST'])(post_endpoint)

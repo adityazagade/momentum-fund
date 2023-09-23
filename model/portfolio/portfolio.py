@@ -73,3 +73,12 @@ class Portfolio:
             quantities.append(holding.quantity)
         df = pd.DataFrame({'symbol': symbols, 'quantity': quantities})
         return df
+
+    def to_dict(self):
+        # iterate over holdings and create a dictionary
+        symbols = []
+        quantities = []
+        for holding in self.holdings:
+            symbols.append(holding.symbol)
+            quantities.append(holding.quantity)
+        return {'symbol': symbols, 'quantity': quantities}
