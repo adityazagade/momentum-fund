@@ -21,26 +21,27 @@
 
 1. Clone the repository
 2. Install the requirements (`pip install -r requirements.txt`)
-3.
-    1. We leverage Zerodha to pull OHLCV data. You need to have a Zerodha account. Log into your Zerodha account
-       at https://kite.zerodha.com/ and copy the `enctoken` from the cookies to app.properties file.
+3. Copy the file `app.properties.sample` to `app.properties`
+    1. We leverage Zerodha to pull OHLCV data and you need to have a Zerodha account. Log into your Zerodha account
+       at https://kite.zerodha.com/ and copy the `enctoken` from the cookies to app.properties file
     2. I was initially relying on `kite.trade` to fetch the date, but I don't want to spend 4k every month for it when I
        can get it for free.
-    3.
+    3. Look at the other properties and change them as per your needs
 5. Run the code by executing the main.py file (`python main.py`)
 6. Enjoy!
 
 ## Usage
 
-The code is written in python. The code is written in a modular way. The code is divided into 3 parts:
+The code is written in python. The code is written in a modular way. 
+
 Details about the properties mentioned in app.properties file:
 
 1. app.host=`localhost` (This is the host on which the code will run)
 2. app.port=`7999` (This is the port on which the code will run)
 3. app.debug=`True` (This is the debug flag. If set to True, the code will run in debug mode)
 4. kite.ui.base_url=`https://kite.zerodha.com` (This is the base url of the kite website)
-5. kite.ui.client_id=`KWxxxx` (This is the client id of your zerodha account)
-6. kite.ui.enctoken=`xxxxxxx` (This is the enctoken of your zerodha account)
+5. kite.ui.client_id=`KWxxxx` (This is the client id of your Zerodha account)
+6. kite.ui.enctoken=`xxxxxxx` (This is the enctoken of your Zerodha account)
 7. portfolio.file=`portfolio.csv` (This is the file where the initial portfolio will be stored)
 8. trade_day=`SUNDAY` (This is the day on which all the trades will be executed)
 9. stock_universe_index=`NIFTY 50` (Stocks from this index will be considered for the portfolio)
