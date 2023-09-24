@@ -28,11 +28,16 @@
        can get it for free.
     3. Look at the other properties and change them as per your needs
 5. Run the code by executing the main.py file (`python main.py`)
-6. Enjoy!
+6. To get the current portfolio run `http://localhost:7999/api/portfolio`. This makes calls to Zerodha to get last
+   closing price, So expect some time to get the response. Zerodha calls are cached, so subsequent calls become faster.
+7. To rebalance the portfolio run `http://localhost:7999/api/rebalance`. This will take a while. If your stock universe
+   is NIFTY_200, then it will take 4-5 minutes. Response will be visible on the screen. This will generate few files
+   along with way, who's contents are mentioned below
+8. Enjoy!
 
 ## Usage
 
-The code is written in python. The code is written in a modular way. 
+The code is written in python. The code is written in a modular way.
 
 Details about the properties mentioned in app.properties file:
 
