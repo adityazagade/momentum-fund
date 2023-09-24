@@ -36,7 +36,7 @@ class MomentumStrategy:
         today = date.today()
         if today.weekday() != self.trade_day.value:
             self.logger.info("Today is not a trade day. Today is %s, skip execution", today)
-            return
+            return None
 
         # 2. Rank all stocks in the universe based on momentum
         ranking_table = self.ranking_strategy.rank(stock_universe)
