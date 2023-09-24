@@ -1,3 +1,18 @@
+app.host=localhost
+app.port=7999
+app.debug=True
+kite.ui.base_url=https://kite.zerodha.com
+kite.ui.client_id=KW3437
+kite.ui.enctoken=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+portfolio.file=portfolio.csv
+trade_day=WEDNESDAY
+stock_universe_index=NIFTY 200
+num_historical_lookup_days=365
+
+# Unused properties
+kite.ui.cookies.session=udpjGvr3mQnbVHUD2gHFpavt9UGAZyQz
+kite.ui.csrf_token=
+kite.ui.public_token=51tlPZthlxnb3F0DNH7fH7hU5ftFCt32
 database.host=localhost
 database.port=5432
 database.name=momentum
