@@ -10,3 +10,6 @@ class KiteConnectService:
 
     def get_data(self, ticker, start_date, end_date) -> OhlcData:
         return self.kite_client.get_data(ticker, start_date, end_date)
+
+    def get_current_prices(self, tickers: list[str]):
+        return self.kite_client.get_current_prices(tickers)

@@ -1,7 +1,8 @@
 from flask import jsonify, request
-
 from config.app_config import AppConfig
 from services.strategy_executor import StrategyExecutor
+from services.portfolio_service import PortfolioService
+from services.ticker_historical_data import TickerDataService
 
 
 def update_request_token(request_token):
@@ -24,10 +25,20 @@ def post_endpoint():
 def init():
     executor = StrategyExecutor()
     result = executor.execute()
-    return jsonify(success=True, message='Strategy executed successfully', data=result.to_dict())
+    message = 'Strategy executed successfully'
+    return jsonify(success=True, message=message, data=result)
+
+
+def get_portfolio():
+    portfolio_service = PortfolioService()
+    portfolio = portfolio_service.get_portfolio()
+    ticker_service = TickerDataService()
+    last_close_prices = ticker_service.get_current_prices(portfolio.get_tickers())
+    return jsonify(success=True, data=portfolio.to_dict(last_close_prices))
 
 
 def create_webhook_routes(app):
     app.route('/api/test', methods=['GET'])(get_endpoint)
     app.route('/api/init', methods=['GET'])(init)
     app.route('/api/webhook', methods=['POST'])(post_endpoint)
+    app.route('/api/portfolio', methods=['GET'])(get_portfolio)

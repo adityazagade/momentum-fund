@@ -1,3 +1,4 @@
+import datetime
 import logging
 import math
 from abc import ABC, abstractmethod
@@ -7,6 +8,7 @@ from model.portfolio.portfolio import Portfolio
 from model.position_sizing.position_sizing_strategies import PositionSizingStrategy
 from model.ranking.ranking_result import RankingTable, RankingTableRow
 from model.rebalancing.rebalancing_result import RebalancingResult
+from model.scheduling.schedule import Schedule
 from services.portfolio_service import PortfolioService
 
 
@@ -19,7 +21,8 @@ class PortfolioRebalancingStrategy(ABC):
     @abstractmethod
     def rebalance_portfolio(self,
                             portfolio: Portfolio,
-                            ranking_table: RankingTable) -> RebalancingResult:
+                            ranking_table: RankingTable,
+                            cash_flow: float) -> RebalancingResult:
         pass
 
 
@@ -35,19 +38,25 @@ class PortfolioRebalancingStrategyStrategyImpl(PortfolioRebalancingStrategy):
                  ticker_ema_span: int,
                  market_regime_filter: MarketRegimeFilter,
                  risk_factor: float,
-                 position_sizing_strategy: PositionSizingStrategy) -> None:
+                 position_sizing_strategy: PositionSizingStrategy,
+                 position_rebalance_schedule: Schedule,
+                 threshold: float) -> None:
         super().__init__()
+        self.threshold = threshold
         self.position_sizing_strategy = position_sizing_strategy
         self.portfolio_service = PortfolioService()
         self.risk_factor = risk_factor
         self.top_n_percent = top_n_percent
         self.ticker_ema_span = ticker_ema_span
         self.market_regime_filter = market_regime_filter
+        self.position_rebalance_schedule = position_rebalance_schedule
         self.logger = logging.getLogger(__name__)
 
     def rebalance_portfolio(self,
                             portfolio: Portfolio,
-                            ranking_table: RankingTable) -> RebalancingResult:
+                            ranking_table: RankingTable,
+                            cash_flow: float,
+                            ) -> RebalancingResult:
         rebalancing_result = RebalancingResult()
         rebalancing_result.portfolio = portfolio
 
@@ -68,20 +77,58 @@ class PortfolioRebalancingStrategyStrategyImpl(PortfolioRebalancingStrategy):
                 # closing_price = position_sizing_result.get_last_close(holding.symbol)
                 stocks_to_sell.append(holding.symbol)
 
-        for stock in stocks_to_sell:
-            portfolio.sell_stock(stock, last_close_data[stock])
+        for ticker in stocks_to_sell:
+            portfolio.sell_stock(ticker, last_close_data[ticker])
+            rebalancing_result.add_stocks_to_sell(ticker)
 
-        rebalancing_result.stocks_to_sell = stocks_to_sell
+        account_value = portfolio.get_account_value(last_close_data)
+        daily_risk = account_value * self.risk_factor
+        position_sizing_result = self.position_sizing_strategy.calculate_position_sizes(ranking_table, account_value)
+
+        if self.position_rebalance_schedule.matches(datetime.date.today()):
+            # we rebalance positions first
+            self.logger.info("Rebalance positions first")
+            for holding in portfolio.holdings:
+                ticker = holding.symbol
+                expected_weight = position_sizing_result.get_weight(ticker)
+                current_weight = holding.quantity * last_close_data[ticker] / account_value
+                threshold = self.threshold
+
+                # first sell things that are overweight
+                if abs(expected_weight - current_weight) > threshold:
+                    # rebalance position
+                    self.logger.info(f"Rebalancing position for {ticker}")
+                    current_atr = position_sizing_result.get_atr(ticker)
+                    last_close = position_sizing_result.get_last_close(ticker)
+                    expected_num_stocks = math.floor(daily_risk / current_atr)
+                    actual_num_stocks = holding.quantity
+
+                    if current_weight > expected_weight:
+                        num_stocks_to_sell = actual_num_stocks - expected_num_stocks
+                        portfolio.sell_stock(ticker, last_close, num_stocks_to_sell)
+                        rebalancing_result.add_stock_to_reduce(ticker,
+                                                               num_stocks_to_sell,
+                                                               last_close,
+                                                               current_weight,
+                                                               expected_weight)
+                    else:
+                        num_stocks_to_buy = expected_num_stocks - actual_num_stocks
+                        portfolio.buy_stock(ticker, num_stocks_to_buy, last_close)
+                        rebalancing_result.add_stock_to_increase(ticker,
+                                                                 num_stocks_to_buy,
+                                                                 last_close,
+                                                                 current_weight,
+                                                                 expected_weight)
+
+        # if cash available after rebalancing positions, then buy new positions
+        available_cash = portfolio.cash
+        if available_cash <= 0:
+            self.logger.info("No cash available. Skip execution")
+            return rebalancing_result
 
         if not self.market_regime_filter.is_allowed():
             self.logger.info("Market regime does not allow any buying. Skip execution")
             return rebalancing_result
-
-        account_value = portfolio.get_account_value(last_close_data)
-        available_cash = portfolio.cash
-        daily_risk = account_value * self.risk_factor
-
-        position_sizing_result = self.position_sizing_strategy.calculate_position_sizes(ranking_table, account_value)
 
         # For each stock in the ranking_table, start from top and check if it is in the portfolio
         # If it is not, then buy the stock
@@ -89,7 +136,8 @@ class PortfolioRebalancingStrategyStrategyImpl(PortfolioRebalancingStrategy):
             if not portfolio.is_present(row.symbol) and \
                     row.included is True and \
                     available_cash > 0 and \
-                    row.symbol not in stocks_to_sell:
+                    row.symbol not in stocks_to_sell and \
+                    row.symbol in stocks_in_top_n_percentile:
                 # buy stock
                 current_atr = position_sizing_result.get_atr(row.symbol)
                 last_close = position_sizing_result.get_last_close(row.symbol)

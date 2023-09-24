@@ -1,3 +1,4 @@
+import datetime
 import logging
 import time
 from abc import ABC, abstractmethod
@@ -112,6 +113,15 @@ class HttpKiteClient(KiteClient):
         json_data = response.json()
         candles_data = json_data["data"]["candles"]  # Extract the "candles" array from the JSON data
         return OhlcData.from_json(ticker, candles_data)
+
+    def get_current_prices(self, tickers: list[str]):
+        price_map = {}
+        for ticker in tickers:
+            start_date = datetime.date.today() - datetime.timedelta(days=10)
+            end_date = datetime.date.today()
+            data = self.get_data(ticker, start_date, end_date)
+            price_map.update({ticker: data.get_last_price()})
+        return price_map
 
 
 class KiteSDKClient(KiteClient):

@@ -6,8 +6,9 @@ class Frequency(Enum):
     WEEKLY = 2
     BI_WEEKLY = 3
     MONTHLY = 4
-    YEARLY = 5
-    CUSTOM = 6
+    QUARTERLY = 5
+    YEARLY = 6
+    CUSTOM = 7
 
 
 class DayOfWeek(Enum):

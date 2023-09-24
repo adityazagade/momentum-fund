@@ -6,7 +6,6 @@ from config.app_config import AppConfig
 from model.market_regime_filter import LongTermMovingAverageMarketRegimeFilter
 from model.momentum_strategy import MomentumStrategy
 from model.rebalancing.portfolio_rebalancing import PortfolioRebalancingStrategyStrategyImpl
-from model.rebalancing.position_rebalancing import VolatilityBasedPositionRebalancingStrategy
 from model.position_sizing.position_sizing_strategies import EqualRiskPositionSizingStrategy
 from model.ranking.ranking_strategies import VolatilityAdjustedReturnsRankingStrategy
 from model.scheduling.frequency import Frequency, DayOfWeek
@@ -23,7 +22,7 @@ class StrategyExecutor:
         self.portfolio_service = PortfolioService()
         self.index_service = IndexDataService()
 
-    def execute(self):
+    def execute(self, cash_flow: float = 0.0):
         self.logger.info('Executing strategy executor')
 
         current_portfolio = self.portfolio_service.get_portfolio()
@@ -34,14 +33,18 @@ class StrategyExecutor:
 
         num_historical_lookup_days = int(self.app_config.get_or_default('num_historical_lookup_days', default=365))
 
+        threshold = 0.0025  # 0.25%
         ticker_ema_span = 100
-        risk_factor = 0.001
+        risk_factor = 0.005
         top_n_percent = 20
         num_days = 90
         max_gap_percent = 20
         atr_period = 20
         index_ema_span = 200
         default_historical_lookup_days = 365
+
+        inception_date = date(2010, 1, 1)
+        end_date = inception_date.replace(year=date.today().year + 100)
 
         ranking_strategy = VolatilityAdjustedReturnsRankingStrategy(
             num_days=num_days,
@@ -61,31 +64,39 @@ class StrategyExecutor:
             index_ema_span=index_ema_span,
             default_historical_lookup_days=default_historical_lookup_days)
 
-        position_rebalancing_strategy = VolatilityBasedPositionRebalancingStrategy(
-            schedule=Schedule(
-                start_date=date.today(),
-                end_date=date.today(),
-                frequency=Frequency.BI_WEEKLY,
-                day_of_week=trade_day,
-            ))
+        position_rebalance_schedule = Schedule(
+            start_date=inception_date,
+            end_date=end_date,
+            frequency=Frequency.BI_WEEKLY,
+            day_of_week=trade_day,
+        )
+
+        portfolio_rebalance_schedule = Schedule(
+            start_date=inception_date,
+            end_date=end_date,
+            frequency=Frequency.WEEKLY,
+            day_of_week=trade_day,
+        )
 
         portfolio_rebalancing_strategy = PortfolioRebalancingStrategyStrategyImpl(
             risk_factor=risk_factor,
             top_n_percent=top_n_percent,
             ticker_ema_span=ticker_ema_span,
             market_regime_filter=market_regime_filter,
-            position_sizing_strategy=position_size_strategy
+            position_sizing_strategy=position_size_strategy,
+            position_rebalance_schedule=position_rebalance_schedule,
+            threshold=threshold
         )
 
         ms = MomentumStrategy(
             trade_day=trade_day,
             ranking_strategy=ranking_strategy,
             market_regime_filter=market_regime_filter,
-            position_rebalancing_strategy=position_rebalancing_strategy,
-            portfolio_rebalancing_strategy=portfolio_rebalancing_strategy
+            portfolio_rebalancing_strategy=portfolio_rebalancing_strategy,
+            portfolio_rebalance_schedule=portfolio_rebalance_schedule
         )
 
         index = self.app_config.get(constants.STOCK_UNIVERSE_INDEX_KEY)
         stock_universe = self.index_service.get_index_constituents(index)
 
-        return ms.execute(stock_universe, current_portfolio)
+        return ms.execute(stock_universe, current_portfolio, cash_flow)

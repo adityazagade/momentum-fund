@@ -95,7 +95,7 @@ class VolatilityAdjustedReturnsRankingStrategy(RankingStrategy):
 
         result_df.sort_values(by=['score'], ascending=False, inplace=True)
         result_df.reset_index(inplace=True, drop=True)
-        # self.save_ranking_results(sym_param_df)
+        self.save_ranking_results(result_df)
         return RankingTable.from_df(result_df)
 
     @staticmethod
@@ -132,9 +132,9 @@ class VolatilityAdjustedReturnsRankingStrategy(RankingStrategy):
             lambda row: 1 if row[column_names.close] - row[column_names.ema] > 0 else (
                 -1 if row[column_names.close] - row[column_names.ema] < 0 else 0), axis=1)
 
-    def save_ranking_results(self, sym_param_df):
+    def save_ranking_results(self, ranking_result_df: DataFrame):
         file_name = self.ranking_file_name
-        sym_param_df.to_csv(file_name, index=False)
+        ranking_result_df.to_csv(file_name, index=False)
 
     @staticmethod
     def calculate_percent_change(data_df: DataFrame):

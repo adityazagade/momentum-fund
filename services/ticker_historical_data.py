@@ -26,3 +26,7 @@ class TickerDataService:
     def get_data_from_api(self, ticker: str, start_date: date, end_date: date) -> OhlcData:
         """Get data from database: There is issue with nsepy library. It is not returning data for some stocks"""
         return self.client.get_data(ticker, start_date, end_date)
+
+    def get_current_prices(self, tickers: list[str]) -> dict:
+        """Get current prices of tickers"""
+        return self.kite_service.get_current_prices(tickers)
