@@ -15,7 +15,7 @@ class PortfolioService:
     def __init__(self) -> None:
         super().__init__()
         self.app_config = AppConfig(PROPERTIES_FILE)
-        self.nse_client = NSEClient()
+        self.nse_client = NSEClient.get_instance()
         self.logger = logging.getLogger(__name__)
 
     def get_portfolio(self) -> Portfolio:

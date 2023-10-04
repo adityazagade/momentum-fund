@@ -1,0 +1,203 @@
+{
+  "data": {
+    "portfolio": {
+      "account_value": 100591.0,
+      "cash": {
+        "value": 4899.0,
+        "weight": "4.87%"
+      },
+      "holdings": [
+        {
+          "close": "75.05",
+          "quantity": 60.0,
+          "symbol": "IRFC",
+          "weight": "4.48%"
+        },
+        {
+          "close": "1675.7",
+          "quantity": 6.0,
+          "symbol": "GLAND",
+          "weight": "10.0%"
+        },
+        {
+          "close": "283.15",
+          "quantity": 23.0,
+          "symbol": "RECLTD",
+          "weight": "6.47%"
+        },
+        {
+          "close": "243.9",
+          "quantity": 29.0,
+          "symbol": "PFC",
+          "weight": "7.03%"
+        },
+        {
+          "close": "418.9",
+          "quantity": 13.0,
+          "symbol": "JSWENERGY",
+          "weight": "5.41%"
+        },
+        {
+          "close": "5313.4",
+          "quantity": 2.0,
+          "symbol": "POLYCAB",
+          "weight": "10.56%"
+        },
+        {
+          "close": "127.55",
+          "quantity": 51.0,
+          "symbol": "BHEL",
+          "weight": "6.47%"
+        },
+        {
+          "close": "3195.5",
+          "quantity": 3.0,
+          "symbol": "ESCORTS",
+          "weight": "9.53%"
+        },
+        {
+          "close": "1280.3",
+          "quantity": 3,
+          "symbol": "BSE",
+          "weight": "3.82%"
+        },
+        {
+          "close": "2128.9",
+          "quantity": 2,
+          "symbol": "MAZDOCK",
+          "weight": "4.23%"
+        },
+        {
+          "close": "226.4",
+          "quantity": 27,
+          "symbol": "KALYANKJIL",
+          "weight": "6.08%"
+        },
+        {
+          "close": "1041.3",
+          "quantity": 4,
+          "symbol": "COCHINSHIP",
+          "weight": "4.14%"
+        },
+        {
+          "close": "28.1",
+          "quantity": 268,
+          "symbol": "SUZLON",
+          "weight": "7.49%"
+        },
+        {
+          "close": "70.1",
+          "quantity": 59,
+          "symbol": "SJVN",
+          "weight": "4.11%"
+        },
+        {
+          "close": "5341.8",
+          "quantity": 1,
+          "symbol": "APARINDS",
+          "weight": "5.31%"
+        }
+      ],
+      "name": "self_momentum"
+    },
+    "stocks_to_buy": [
+      {
+        "num_stocks_to_buy": 3,
+        "ticker": "BSE",
+        "weight": 0.04
+      },
+      {
+        "num_stocks_to_buy": 2,
+        "ticker": "MAZDOCK",
+        "weight": 0.04
+      },
+      {
+        "num_stocks_to_buy": 27,
+        "ticker": "KALYANKJIL",
+        "weight": 0.06
+      },
+      {
+        "num_stocks_to_buy": 4,
+        "ticker": "COCHINSHIP",
+        "weight": 0.04
+      },
+      {
+        "num_stocks_to_buy": 268,
+        "ticker": "SUZLON",
+        "weight": 0.07
+      },
+      {
+        "num_stocks_to_buy": 59,
+        "ticker": "SJVN",
+        "weight": 0.04
+      },
+      {
+        "num_stocks_to_buy": 1,
+        "ticker": "APARINDS",
+        "weight": 0.05
+      }
+    ],
+    "stocks_to_increase": [],
+    "stocks_to_reduce": [
+      {
+        "last_close": 75.05,
+        "new_weight": 0.04,
+        "num_stocks_to_sell": 30.0,
+        "old_weight": 0.07,
+        "ticker": "IRFC"
+      },
+      {
+        "last_close": 1675.7,
+        "new_weight": 0.1,
+        "num_stocks_to_sell": 2.0,
+        "old_weight": 0.13,
+        "ticker": "GLAND"
+      },
+      {
+        "last_close": 283.15,
+        "new_weight": 0.06,
+        "num_stocks_to_sell": 18.0,
+        "old_weight": 0.12,
+        "ticker": "RECLTD"
+      },
+      {
+        "last_close": 243.9,
+        "new_weight": 0.07,
+        "num_stocks_to_sell": 22.0,
+        "old_weight": 0.12,
+        "ticker": "PFC"
+      },
+      {
+        "last_close": 418.9,
+        "new_weight": 0.05,
+        "num_stocks_to_sell": 10.0,
+        "old_weight": 0.1,
+        "ticker": "JSWENERGY"
+      },
+      {
+        "last_close": 5313.4,
+        "new_weight": 0.11,
+        "num_stocks_to_sell": 1.0,
+        "old_weight": 0.16,
+        "ticker": "POLYCAB"
+      },
+      {
+        "last_close": 127.55,
+        "new_weight": 0.06,
+        "num_stocks_to_sell": 27.0,
+        "old_weight": 0.1,
+        "ticker": "BHEL"
+      },
+      {
+        "last_close": 3195.5,
+        "new_weight": 0.1,
+        "num_stocks_to_sell": 2.0,
+        "old_weight": 0.16,
+        "ticker": "ESCORTS"
+      }
+    ],
+    "stocks_to_sell": []
+  },
+  "message": "Strategy executed successfully",
+  "success": true
+}

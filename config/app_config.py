@@ -20,4 +20,7 @@ class AppConfig:
                 f.write(f'{key}={value}\n')
 
     def get_or_default(self, key, default):
-        return self.properties.get(key, default)
+        try:
+            return self.properties.get(key, default)
+        except KeyError:
+            return default

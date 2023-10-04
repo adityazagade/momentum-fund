@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.DEBUG)
 class TickerDataService:
     def __init__(self):
         self.repository = OhlcRepository()
-        self.client = NSEClient()
+        self.client = NSEClient.get_instance()
         self.kite_service = KiteConnectService()
 
     def get_data(self, ticker: str, start_date: date, end_date: date) -> OhlcData:
