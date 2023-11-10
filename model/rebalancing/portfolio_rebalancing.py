@@ -72,7 +72,10 @@ class PortfolioRebalancingStrategyStrategyImpl(PortfolioRebalancingStrategy):
         top_n_percent_rows = self.get_top_n_percent(ranking_table, self.top_n_percent)
         stocks_in_top_n_percentile = [row.symbol for row in top_n_percent_rows]
         for holding in portfolio.holdings:
-            if holding.symbol not in stocks_in_top_n_percentile:
+            # check if the stock is trending below its n-day moving average.
+            ranking_table_row = ranking_table.get_row(holding.symbol)
+            trending = ranking_table_row.trend == 1
+            if holding.symbol not in stocks_in_top_n_percentile or not trending:
                 # closing_price = last_close_data[holding.symbol]
                 # closing_price = position_sizing_result.get_last_close(holding.symbol)
                 stocks_to_sell.append(holding.symbol)

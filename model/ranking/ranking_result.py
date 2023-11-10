@@ -37,3 +37,9 @@ class RankingTable:
             if row.symbol == ticker:
                 return row.closing_price
         raise ValueError(f'Could not find ticker {ticker} in ranking table')
+
+    def get_row(self, ticker: str) -> RankingTableRow:
+        for row in self.rows:
+            if row.symbol == ticker:
+                return row
+        raise ValueError(f'Could not find ticker {ticker} in ranking table')

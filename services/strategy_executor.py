@@ -42,7 +42,7 @@ class StrategyExecutor:
         self.logger.info("Trade day: %s", trade_day)
 
         num_historical_lookup_days = int(self.app_config.get_or_default('num_historical_lookup_days', default=365))
-        min_market_cap = int(self.app_config.get_or_default('filter.min_market_cap', default=None))
+        min_market_cap = int(self.app_config.get_or_default('filter.min_market_cap', default=0))
 
         threshold = 0.0025  # 0.25%
         ticker_ema_span = 100
@@ -108,7 +108,11 @@ class StrategyExecutor:
         )
 
         index = self.app_config.get(constants.STOCK_UNIVERSE_INDEX_KEY)
-        index_constituents_filter = IndexConstituentsFilter(min_market_cap=min_market_cap)
+
+        if min_market_cap:
+            index_constituents_filter = IndexConstituentsFilter(min_market_cap=min_market_cap)
+        else:
+            index_constituents_filter = None
         stock_universe = self.index_service.get_index_constituents(index, index_filter=index_constituents_filter)
 
         return momentum_strategy.execute(stock_universe, current_portfolio, cash_flow)
