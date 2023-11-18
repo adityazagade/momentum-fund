@@ -2,15 +2,15 @@ import datetime
 import logging
 import time
 from abc import ABC, abstractmethod
-
 import pandas as pd
 import requests
 from kiteconnect import KiteConnect
 from pandas import DataFrame
 
-from config.app_config import AppConfig
+from services.config_service import ConfigService
 from model.Ohlcv import OhlcData
 from services.cache_service import CacheService
+from services.config_service import ConfigService
 
 
 class KiteClient(ABC):
@@ -26,13 +26,13 @@ class KiteClient(ABC):
 class HttpKiteClient(KiteClient):
     def __init__(self) -> None:
         super().__init__()
-        app_config = AppConfig('app.properties')
-        self.base_url = app_config.get('kite.ui.base_url')
-        self.session = app_config.get('kite.ui.cookies.session')
-        self.csrf_token = app_config.get('kite.ui.csrf_token')
-        self.client_id = app_config.get('kite.ui.client_id')
-        self.public_token = app_config.get('kite.ui.public_token')
-        self.enctoken = app_config.get('kite.ui.enctoken')
+        config_service = ConfigService.get_instance()
+        self.base_url = config_service.get('kite.ui.base_url')
+        self.session = config_service.get('kite.ui.cookies.session')
+        self.csrf_token = config_service.get('kite.ui.csrf_token')
+        self.client_id = config_service.get('kite.ui.client_id')
+        self.public_token = config_service.get('kite.ui.public_token')
+        self.enc_token = config_service.get('kite.ui.enctoken')
 
         # load instruments.csv into a dataframe
         self.instruments_df = pd.read_csv('instruments.csv')
@@ -71,7 +71,7 @@ class HttpKiteClient(KiteClient):
             'authority': 'kite.zerodha.com',
             'accept': 'application/json, text/plain, */*',
             'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
-            'authorization': f'enctoken {self.enctoken}',
+            'authorization': f'enctoken {self.enc_token}',
             'dnt': '1',
             'referer': 'https://kite.zerodha.com/chart/web/tvc/NSE/DIXON/5552641',
             'sec-ch-ua': '"Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"',
@@ -127,12 +127,12 @@ class HttpKiteClient(KiteClient):
 class KiteSDKClient(KiteClient):
     def __init__(self) -> None:
         super().__init__()
-        self.app_config = AppConfig('app.properties')
-        api_key = self.app_config.get('kite.api_key')
-        api_secret = self.app_config.get('kite.api_secret')
-        request_token = self.app_config.get('kite.request_token')
-        access_token = self.app_config.get('kite.access_token')
-        public_token = self.app_config.get('kite.public_token')
+        self.config_service = ConfigService.get_instance()
+        api_key = self.config_service.get('kite.api_key')
+        api_secret = self.config_service.get('kite.api_secret')
+        request_token = self.config_service.get('kite.request_token')
+        access_token = self.config_service.get('kite.access_token')
+        public_token = self.config_service.get('kite.public_token')
         kite = KiteConnect(api_key=api_key)
 
         if request_token is None or request_token == '':
@@ -182,9 +182,9 @@ class KiteSDKClient(KiteClient):
         return DataFrame(response)
 
     def update_config_in_file(self, access_token_, public_token_):
-        self.app_config.set('kite.access_token', access_token_)
-        self.app_config.set('kite.public_token', public_token_)
-        self.app_config.write()
+        self.config_service.set('kite.access_token', access_token_)
+        self.config_service.set('kite.public_token', public_token_)
+        self.config_service.write()
 
 
 def is_null_or_empty(text):

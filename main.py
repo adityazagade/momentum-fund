@@ -1,14 +1,14 @@
 from flask import Flask
 from flask_cors import CORS
 
-from config.app_config import AppConfig
+from services.config_service import ConfigService
 from controller.webhook_controller import create_webhook_routes
 
 if __name__ == '__main__':
-    app_config = AppConfig("app.properties")
-    debug = app_config.get('app.debug')
-    host = app_config.get('app.host')
-    port = app_config.get('app.port')
+    config_service = ConfigService.get_instance()
+    debug = config_service.get('app.debug')
+    host = config_service.get('app.host')
+    port = config_service.get('app.port')
 
     app = Flask(__name__)
     cors = CORS(app, resources={r"/api/*": {"origins": "*"}})

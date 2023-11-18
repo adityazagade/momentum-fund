@@ -2,7 +2,6 @@ import logging
 from constants import constants as constants
 
 from datetime import date
-from config.app_config import AppConfig
 from model.filter.filters import IndexConstituentsFilter
 from model.market_regime_filter import LongTermMovingAverageMarketRegimeFilter
 from model.momentum_strategy import MomentumStrategy
@@ -11,6 +10,7 @@ from model.position_sizing.position_sizing_strategies import EqualRiskPositionSi
 from model.ranking.ranking_strategies import VolatilityAdjustedReturnsRankingStrategy
 from model.scheduling.frequency import Frequency, DayOfWeek
 from model.scheduling.schedule import Schedule
+from services.config_service import ConfigService
 from services.index_service import IndexDataService
 from services.portfolio_service import PortfolioService
 
@@ -22,7 +22,7 @@ class StrategyExecutor:
 
     def __init__(self) -> None:
         super().__init__()
-        self.app_config = AppConfig(constants.PROPERTIES_FILE)
+        self.config_service = ConfigService.get_instance()
         self.logger = logging.getLogger(__name__)
         self.portfolio_service = PortfolioService()
         self.index_service = IndexDataService()
@@ -38,16 +38,16 @@ class StrategyExecutor:
         current_portfolio = self.portfolio_service.get_portfolio()
         self.logger.info("Current portfolio: \n%s", current_portfolio)
 
-        trade_day = DayOfWeek.from_string(self.app_config.get(constants.TRADE_DAY_KEY), default=DayOfWeek.WEDNESDAY)
+        trade_day = DayOfWeek.from_string(self.config_service.get(constants.TRADE_DAY_KEY), default=DayOfWeek.WEDNESDAY)
         self.logger.info("Trade day: %s", trade_day)
 
-        num_historical_lookup_days = int(self.app_config.get_or_default('num_historical_lookup_days', default=365))
-        min_market_cap = int(self.app_config.get_or_default('filter.min_market_cap', default=0))
+        num_historical_lookup_days = int(self.config_service.get_or_default('num_historical_lookup_days', default=365))
+        top_n_percent = int(self.config_service.get_or_default('top_n_percent', default=20))
+        min_market_cap = int(self.config_service.get_or_default('filter.min_market_cap', default=0))
 
         threshold = 0.0025  # 0.25%
         ticker_ema_span = 100
         risk_factor = 0.003
-        top_n_percent = 20
         num_days = 90
         max_gap_percent = 20
         atr_period = 20
@@ -107,7 +107,7 @@ class StrategyExecutor:
             portfolio_rebalance_schedule=portfolio_rebalance_schedule
         )
 
-        index = self.app_config.get(constants.STOCK_UNIVERSE_INDEX_KEY)
+        index = self.config_service.get(constants.STOCK_UNIVERSE_INDEX_KEY)
 
         if min_market_cap:
             index_constituents_filter = IndexConstituentsFilter(min_market_cap=min_market_cap)

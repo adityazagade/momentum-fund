@@ -5,7 +5,7 @@ This module contains IndexDataService class which is responsible for fetching in
 import logging
 
 from clients.nse_client import NSEClient
-from config.app_config import AppConfig
+from services.config_service import ConfigService
 from model.company_info import CompanyInfo
 from model.filter.filters import IndexConstituentsFilter
 
@@ -19,7 +19,7 @@ class IndexDataService:
 
     def __init__(self) -> None:
         super().__init__()
-        self.app_config = AppConfig(APP_PROPERTIES)
+        self.config_service = ConfigService.get_instance()
         self.logger = logging.getLogger(__name__)
         self.nse_client = NSEClient.get_instance()
 

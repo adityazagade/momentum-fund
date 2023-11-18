@@ -1,17 +1,17 @@
 import psycopg2
 
-from config.app_config import AppConfig
+from services.config_service import ConfigService
 
 
 class BaseRepository:
     def __init__(self):
-        app_config = AppConfig('app.properties')
+        config_service = ConfigService.get_instance()
 
         db_params = {
-            "dbname": app_config.get('database.name'),
-            "user": app_config.get('database.username'),
-            "password": app_config.get('database.password'),
-            "host": app_config.get('database.host'),
-            "port": app_config.get('database.port')
+            "dbname": config_service.get('database.name'),
+            "user": config_service.get('database.username'),
+            "password": config_service.get('database.password'),
+            "host": config_service.get('database.host'),
+            "port": config_service.get('database.port')
         }
         self.conn = psycopg2.connect(**db_params)
