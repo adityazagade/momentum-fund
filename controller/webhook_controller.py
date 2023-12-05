@@ -23,8 +23,14 @@ def post_endpoint():
 
 
 def init():
+    # read the cash_flow query param and pass it to the strategy executor
+    cash_flow_query_param = request.args.get('cash_flow')
+    if cash_flow_query_param is not None:
+        cash_flow = float(cash_flow_query_param)
+    else:
+        cash_flow = 0.0
     executor = StrategyExecutor()
-    result = executor.execute()
+    result = executor.execute(cash_flow=cash_flow)
     message = 'Strategy executed successfully'
     return jsonify(success=True, message=message, data=result)
 

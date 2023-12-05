@@ -60,6 +60,9 @@ class PortfolioRebalancingStrategyStrategyImpl(PortfolioRebalancingStrategy):
         rebalancing_result = RebalancingResult()
         rebalancing_result.portfolio = portfolio
 
+        # add new cash flow to portfolio
+        portfolio.cash += cash_flow
+
         # create a dictionary of stocks and their last close price
         last_close_data = {}
         for row in ranking_table.rows:
@@ -89,8 +92,8 @@ class PortfolioRebalancingStrategyStrategyImpl(PortfolioRebalancingStrategy):
         position_sizing_result = self.position_sizing_strategy.calculate_position_sizes(ranking_table, account_value)
 
         if self.position_rebalance_schedule.matches(datetime.date.today()):
-            # we rebalance positions first
-            self.logger.info("Rebalance positions first")
+            # we rebalance overweight positions first
+            self.logger.info("Rebalance overweight positions")
             for holding in portfolio.holdings:
                 ticker = holding.symbol
                 expected_weight = position_sizing_result.get_weight(ticker)
@@ -98,30 +101,48 @@ class PortfolioRebalancingStrategyStrategyImpl(PortfolioRebalancingStrategy):
                 threshold = self.threshold
 
                 # first sell things that are overweight
-                if abs(expected_weight - current_weight) > threshold:
+                if current_weight > expected_weight > threshold:
                     # rebalance position
-                    self.logger.info(f"Rebalancing position for {ticker}")
+                    self.logger.info("Rebalancing overweight position for %s", ticker)
                     current_atr = position_sizing_result.get_atr(ticker)
                     last_close = position_sizing_result.get_last_close(ticker)
                     expected_num_stocks = math.floor(daily_risk / current_atr)
                     actual_num_stocks = holding.quantity
 
-                    if current_weight > expected_weight:
-                        num_stocks_to_sell = actual_num_stocks - expected_num_stocks
-                        portfolio.sell_stock(ticker, last_close, num_stocks_to_sell)
-                        rebalancing_result.add_stock_to_reduce(ticker,
-                                                               num_stocks_to_sell,
-                                                               last_close,
-                                                               current_weight,
-                                                               expected_weight)
-                    else:
-                        num_stocks_to_buy = expected_num_stocks - actual_num_stocks
-                        portfolio.buy_stock(ticker, num_stocks_to_buy, last_close)
-                        rebalancing_result.add_stock_to_increase(ticker,
-                                                                 num_stocks_to_buy,
-                                                                 last_close,
-                                                                 current_weight,
-                                                                 expected_weight)
+                    num_stocks_to_sell = actual_num_stocks - expected_num_stocks
+                    portfolio.sell_stock(ticker, last_close, num_stocks_to_sell)
+                    rebalancing_result.add_stock_to_reduce(ticker,
+                                                           num_stocks_to_sell,
+                                                           last_close,
+                                                           current_weight,
+                                                           expected_weight)
+
+            # we rebalance underweight positions now
+            self.logger.info("Rebalance underweight positions")
+            for holding in portfolio.holdings:
+                ticker = holding.symbol
+                expected_weight = position_sizing_result.get_weight(ticker)
+                current_weight = holding.quantity * last_close_data[ticker] / account_value
+                threshold = self.threshold
+                # buy things that are underweight
+                if expected_weight - current_weight > threshold:
+                    # rebalance position
+                    self.logger.info("Rebalancing underweight position for %s", ticker)
+                    current_atr = position_sizing_result.get_atr(ticker)
+                    last_close = position_sizing_result.get_last_close(ticker)
+                    expected_num_stocks = math.floor(daily_risk / current_atr)
+                    actual_num_stocks = holding.quantity
+                    num_stocks_to_buy = expected_num_stocks - actual_num_stocks
+                    # expected_amount_needed = num_stocks_to_buy * last_close
+                    # if portfolio.cash > expected_amount_needed:
+                    portfolio.buy_stock(ticker, num_stocks_to_buy, last_close)
+                    rebalancing_result.add_stock_to_increase(ticker,
+                                                             num_stocks_to_buy,
+                                                             last_close,
+                                                             current_weight,
+                                                             expected_weight)
+                    # else:
+                    #     self.logger.info("Not enough cash to buy %s for underweight rebalance. Skip execution", ticker)
 
         # if cash available after rebalancing positions, then buy new positions
         available_cash = portfolio.cash
@@ -162,12 +183,18 @@ class PortfolioRebalancingStrategyStrategyImpl(PortfolioRebalancingStrategy):
         return rebalancing_result
 
     def print_and_save(self, result: Result):
+        """
+        Print the result and save it to the filesystem
+        """
         self.logger.info(result)
         self.logger.info("Saving results to filesystem")
         result.save()
 
     @staticmethod
     def get_top_n_percent(ranking_table: RankingTable, top_n_percent: int) -> list[RankingTableRow]:
+        """
+        Get the top n% of stocks from the ranking table
+        """
         total_stocks = len(ranking_table.rows)
         top_n = int(total_stocks * (top_n_percent / 100))
         return ranking_table.rows[:top_n]
