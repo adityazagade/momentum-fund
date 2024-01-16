@@ -5,6 +5,7 @@ This module is responsible for reading properties from app.properties file and c
 import glob
 import os
 from typing import Any
+import re
 
 APP_PROPERTIES = 'app.properties'
 
@@ -61,7 +62,15 @@ class ConfigService:
         # cookie_1700318683017.txt where 1700318683017 is the timestamp. The latest file will have the latest timestamp.
         cookie_files = glob.glob(self.properties.get('cookie_file_path_pattern'))
         # glob_glob = glob.glob('/Users/adityazagade/Downloads/cookie_*.txt')
-        cookie_file = max(cookie_files, key=os.path.getctime)
+
+        # Sort files by timestamp
+        sorted_files = sorted(cookie_files, key=self.extract_timestamp, reverse=True)
+
+        # Select the most recent file
+        cookie_file = sorted_files[0] if sorted_files else None
+
+        # cookie_file = max(cookie_files, key=os.path.getctime)
+
         with open(cookie_file, 'r', encoding='utf-8') as text_file:
             for line in text_file:
                 line = line.strip()
@@ -114,3 +123,14 @@ class ConfigService:
         with open(APP_PROPERTIES, 'w', encoding='utf-8') as text_file:
             for key, value in self.properties.items():
                 text_file.write(f'{key}={value}\n')
+
+    # Function to extract timestamp from filename
+    @staticmethod
+    def extract_timestamp(filename):
+        """
+        This method extracts the timestamp from the given file name
+        :param filename: filename
+        :return: timestamp
+        """
+        match = re.search(r'cookie_(\d+)\.txt', filename)
+        return int(match.group(1)) if match else 0
