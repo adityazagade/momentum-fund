@@ -5,9 +5,20 @@ kite.ui.base_url=https://kite.zerodha.com
 kite.ui.client_id=KW3437
 kite.ui.enctoken=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 portfolio.file=portfolio.csv
-trade_day=WEDNESDAY
-stock_universe_index=NIFTY 200
+trade_day=TUESDAY
+
+stock_universe_index=NIFTY 500
 num_historical_lookup_days=365
+top_n_percent=5
+num_days=90
+threshold=0.0025
+ticker_ema_span=100
+risk_factor=0.003
+max_gap_percent=19.1
+atr_period=20
+index_ema_span=200
+default_historical_lookup_days=365
+cookie_file_path_pattern=/Users/adityazagade/Downloads/cookie_*.txt
 
 # Unused properties
 kite.ui.cookies.session=udpjGvr3mQnbVHUD2gHFpavt9UGAZyQz
