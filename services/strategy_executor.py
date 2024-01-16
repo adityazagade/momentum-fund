@@ -44,15 +44,15 @@ class StrategyExecutor:
         num_historical_lookup_days = int(self.config_service.get_or_default('num_historical_lookup_days', default=365))
         top_n_percent = int(self.config_service.get_or_default('top_n_percent', default=20))
         min_market_cap = int(self.config_service.get_or_default('filter.min_market_cap', default=0))
-
-        threshold = 0.0025  # 0.25%
-        ticker_ema_span = 100
-        risk_factor = 0.003
-        num_days = 90
-        max_gap_percent = 20
-        atr_period = 20
-        index_ema_span = 200
-        default_historical_lookup_days = 365
+        num_days = int(self.config_service.get_or_default('num_days', default=90))
+        threshold = float(self.config_service.get_or_default('threshold', default=0.0025))  # 0.25%
+        ticker_ema_span = int(self.config_service.get_or_default('ticker_ema_span', default=100))
+        risk_factor = float(self.config_service.get_or_default('risk_factor', default=0.003))
+        max_gap_percent = float(self.config_service.get_or_default('max_gap_percent', default=19.1))
+        atr_period = int(self.config_service.get_or_default('atr_period', default=20))
+        index_ema_span = int(self.config_service.get_or_default('index_ema_span', default=200))
+        default_historical_lookup_days = int(
+            self.config_service.get_or_default('default_historical_lookup_days', default=365))
 
         inception_date = date(2010, 1, 1)
         end_date = inception_date.replace(year=date.today().year + 100)
