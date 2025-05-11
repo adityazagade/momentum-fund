@@ -71,27 +71,43 @@ class ConfigService:
 
         # cookie_file = max(cookie_files, key=os.path.getctime)
 
-        with open(cookie_file, 'r', encoding='utf-8') as text_file:
-            for line in text_file:
-                line = line.strip()
-                # split the line by ',' and store the key value pairs in a dictionary
-                for key_value_pair in line.split(','):
-                    if key_value_pair and '=' in key_value_pair:
-                        key, value = key_value_pair.split('=', 1)
-                        appended_key = 'kite.ui.' + key.strip()
-                        self.properties[appended_key] = value.strip()
+        """
+        Loads cookies from the most recent cookie file if available.
+        """
+        
+        if cookie_file is not None:
+            with open(cookie_file, 'r', encoding='utf-8') as text_file:
+                for line in text_file:
+                    line = line.strip()
+                    # split the line by ',' and store the key value pairs in a dictionary
+                    for key_value_pair in line.split(','):
+                        if key_value_pair and '=' in key_value_pair:
+                            key, value = key_value_pair.split('=', 1)
+                            appended_key = 'kite.ui.' + key.strip()
+                            self.properties[appended_key] = value.strip()
 
     def load_app_properties(self):
         """
         This method loads the properties from app.properties file
         :return: None
         """
+        """
+        Loads properties from the app.properties file.
+        """
+        
         properties_file = 'app.properties'
         with open(properties_file, 'r', encoding='utf-8') as text_file:
             for line in text_file:
                 line = line.strip()
                 if line and '=' in line:
                     key, value = line.split('=', 1)
+                    """
+                    Sets the value for a given key in the properties.
+        
+                    :param key: string key
+                    :param value: value to set
+                    :return: None
+                    """
                     self.properties[key.strip()] = value.strip()
 
     def get_or_default(self, key, default) -> Any:
@@ -120,6 +136,10 @@ class ConfigService:
         This method writes the properties to app.properties file
         :return:
         """
+        """
+        Writes the current properties to the app.properties file.
+        """
+        
         with open(APP_PROPERTIES, 'w', encoding='utf-8') as text_file:
             for key, value in self.properties.items():
                 text_file.write(f'{key}={value}\n')
